@@ -44,7 +44,7 @@ def format_data(
             
             for pair in pool["pool_list"]:
                 doc = {}
-                doc["_id"], doc["text"] = pair[0], pair[1]
+                doc["_id"], doc["text"], doc["title"] = pair[0], pair[1], ""
                 sentences.append(doc)
 
     with open('../dataset_format_beir/queries.jsonl', 'w') as fp: ## Save queries file
