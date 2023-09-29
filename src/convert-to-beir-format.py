@@ -38,7 +38,8 @@ def format_data(
         count = 1
         for pool in data["pools"]:
             query = {}
-            query["_id"], query["text"] = str(count), pool["query"]
+            qs = pool["query"].split('\n')
+            query["_id"], query["text"] = str(count), qs[0].replace(':', '') # update needed: current version only with BDI item title
             queries.append(query)
             count+=1
             

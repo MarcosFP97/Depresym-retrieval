@@ -22,12 +22,12 @@ def evaluate_sentence_transf(
     qrels:object
 ):
     model = DRES(models.SentenceBERT(model_name))
-    retriever = EvaluateRetrieval(model, score_function="cos_sim")
+    retriever = EvaluateRetrieval(model, score_function="dot")
     results = retriever.retrieve(corpus, queries)
     ndcg, _map, recall, precision = retriever.evaluate(qrels, results, retriever.k_values)
     return ndcg, _map, recall, precision
 
 if __name__=="__main__":
     corpus,queries,qrels = load_custom_data("../dataset_format_beir/sentences.jsonl", "../dataset_format_beir/queries.jsonl", "../dataset_format_beir/qrels.tsv")
-    ndcg, _map, recall, precision = evaluate_sentence_transf("msmarco-distilbert-base-v3", corpus, queries, qrels)
+    ndcg, _map, recall, precision = evaluate_sentence_transf('multi-qa-mpnet-base-dot-v1', corpus, queries, qrels)
     print("Ndcg:", ndcg, "MAP:", _map, "Recall:", recall, "Precision:", precision)
