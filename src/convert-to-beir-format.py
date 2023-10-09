@@ -38,8 +38,8 @@ def format_data(
         count = 1
         for pool in data["pools"]:
             query = {}
-            qs = pool["query"].split('\n')
-            query["_id"], query["text"] = str(count), qs[0].replace(':', '') # update needed: current version only with BDI item title
+            # qs = pool["query"].split('\n')
+            query["_id"], query["text"] = str(count), pool["query"] # qs[0].replace(':', '') # update needed: current version only with BDI item title
             queries.append(query)
             count+=1
             
@@ -48,7 +48,7 @@ def format_data(
                 doc["_id"], doc["text"], doc["title"] = pair[0], pair[1], ""
                 sentences.append(doc)
 
-    with open('../dataset_format_beir/queries.jsonl', 'w') as fp: ## Save queries file
+    with open('../dataset_format_beir/queries_BDI_item.jsonl', 'w') as fp: ## Save queries file
         for query in queries:
             fp.write(json.dumps(query)+'\n')
 

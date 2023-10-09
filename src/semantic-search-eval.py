@@ -32,10 +32,10 @@ def evaluate_sentence_transf(
 
 if __name__=="__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("query", nargs='?', default="queries") ### With this param we select the kind of query: only the BDI item tite, the firs question, etc.
+    parser.add_argument("query", nargs='?', default="queries_BDI_item") ### With this param we select the kind of query: only the BDI item tite, the firs question, etc.
     args = parser.parse_args()
     corpus,queries,qrels = load_custom_data("../dataset_format_beir/sentences.jsonl", "../dataset_format_beir/"+str(args.query)+".jsonl", "../dataset_format_beir/qrels.tsv")
-    sr_model = 'all-mpnet-base-v2'
+    sr_model = 'multi-qa-mpnet-base-dot-v1'
     ndcg, _map, recall, precision = evaluate_sentence_transf(sr_model, corpus, queries, qrels)
     with open("../baselines/semantic-search-retrieval.txt",'a+') as f:
         print("Ndcg:", ndcg, "MAP:", _map, "Recall:", recall, "Precision:", precision)
