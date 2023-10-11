@@ -2,6 +2,7 @@ import argparse
 import requests 
 import os
 import json
+from csv import writer
 
 from beir.datasets.data_loader import GenericDataLoader
 from beir.retrieval import models
@@ -59,11 +60,15 @@ def evaluate_bm25(
 
 if __name__=="__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("query", nargs='?', default="queries") ### With this param we select the kind of query: only the BDI item tite, the firs question, etc.
+    parser.add_argument("query", nargs='?', default="queries_BDI_item") ### With this param we select the kind of query: only the BDI item tite, the firs question, etc.
     args = parser.parse_args()
     corpus,queries,qrels = load_custom_data("../dataset_format_beir/sentences.jsonl", "../dataset_format_beir/"+str(args.query)+".jsonl", "../dataset_format_beir/qrels.tsv")
     format_pyserini(corpus)
     ndcg, _map, recall, precision = evaluate_bm25(queries, qrels)
-    with open("../baselines/anserini_bm25.txt",'a+') as f:
-        print("Ndcg:", ndcg, "MAP:", _map, "Recall:", recall, "Precision:", precision)
-        f.write("\nNdcg:"+ json.dumps(ndcg)+ " MAP:"+ json.dumps(_map) + " Recall:"+ json.dumps(recall) + " Precision:"+ json.dumps(precision))
+    row = ["bm25", _map["MAP@10"], _map["MAP@100"], _map["MAP@1000"], precision["P@10"], precision["P@100"], precision["P@1000"], recall["Recall@10"],\
+         recall["Recall@100"], recall["Recall@1000"], ndcg["NDCG@10"], ndcg["NDCG@100"], ndcg["NDCG@1000"]]
+
+    with open("../baselines/bdi_item/output.csv",'a+') as f:
+        writer_object = writer(f)
+        writer_object.writerow(row)
+        f.close()

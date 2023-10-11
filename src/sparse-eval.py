@@ -2,6 +2,7 @@ import argparse
 import requests 
 import os, pathlib, json
 from tqdm import trange
+from csv import writer
 
 from DeepCT.deepct import run_deepct 
 from beir import util, LoggingHandler
@@ -158,23 +159,31 @@ if __name__=="__main__":
     args = parser.parse_args()
     corpus,queries,qrels = load_custom_data("../dataset_format_beir/sentences.jsonl", "../dataset_format_beir/"+str(args.query)+".jsonl", "../dataset_format_beir/qrels.tsv")
     
-    #### DeepCT
+    ### DeepCT
     # configure_deepct()
     # format_pyserini_deepct()
     # ndcg, _map, recall, precision = evaluate_deepct(queries, qrels)
-    # with open("../baselines/deepct.txt",'a+') as f:
-    #     print("Ndcg:", ndcg, "MAP:", _map, "Recall:", recall, "Precision:", precision)
-    #     f.write("\nNdcg:"+ json.dumps(ndcg)+ " MAP:"+ json.dumps(_map) + " Recall:"+ json.dumps(recall) + " Precision:"+ json.dumps(precision))
-    
-    #### SPARTA
-    # ndcg, _map, recall, precision = evaluate_sparta(corpus, queries, qrels)
-    # with open("../baselines/sparta.txt",'a+') as f:
-    #     print("Ndcg:", ndcg, "MAP:", _map, "Recall:", recall, "Precision:", precision)
-    #     f.write("\nNdcg:"+ json.dumps(ndcg)+ " MAP:"+ json.dumps(_map) + " Recall:"+ json.dumps(recall) + " Precision:"+ json.dumps(precision))
+    # row = ["deepct", _map["MAP@10"], _map["MAP@100"], _map["MAP@1000"], precision["P@10"], precision["P@100"], precision["P@1000"], recall["Recall@10"],\
+    #      recall["Recall@100"], recall["Recall@1000"], ndcg["NDCG@10"], ndcg["NDCG@100"], ndcg["NDCG@1000"]]
 
-    #### DocT5Query
-    document_expansion(corpus)
-    format_pyserini_docT5()
+    # with open("../baselines/bdi_item/output.csv",'a+') as f:
+    #     writer_object = writer(f)
+    #     writer_object.writerow(row)
+    #     f.close()
+    
+    # ### SPARTA
+    # ndcg, _map, recall, precision = evaluate_sparta(corpus, queries, qrels)
+    # row = ["sparta", _map["MAP@10"], _map["MAP@100"], _map["MAP@1000"], precision["P@10"], precision["P@100"], precision["P@1000"], recall["Recall@10"],\
+    #      recall["Recall@100"], recall["Recall@1000"], ndcg["NDCG@10"], ndcg["NDCG@100"], ndcg["NDCG@1000"]]
+
+    # with open("../baselines/bdi_item/output.csv",'a+') as f:
+    #     writer_object = writer(f)
+    #     writer_object.writerow(row)
+    #     f.close()
+
+    ### DocT5Query
+    gen_queries = document_expansion(corpus)
+    format_pyserini_docT5(gen_queries)
     ndcg, _map, recall, precision = evaluate_docT5(queries, qrels)
     with open("../baselines/docT5.txt",'a+') as f:
         print("Ndcg:", ndcg, "MAP:", _map, "Recall:", recall, "Precision:", precision)
