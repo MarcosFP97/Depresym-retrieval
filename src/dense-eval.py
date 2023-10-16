@@ -2,6 +2,7 @@ import argparse
 import json
 
 from beir.datasets.data_loader import GenericDataLoader
+from csv import writer
 from beir.retrieval import models
 from beir.retrieval.evaluation import EvaluateRetrieval
 from beir.retrieval.search.dense import DenseRetrievalExactSearch as DRES
@@ -63,18 +64,30 @@ if __name__=="__main__":
     
     #### DPR eval
     ndcg, _map, recall, precision = evaluate_dpr(corpus, queries, qrels)
-    with open("../baselines/options/dpr.txt",'a+') as f:
-        print("Ndcg:", ndcg, "MAP:", _map, "Recall:", recall, "Precision:", precision)
-        f.write("\nNdcg:"+ json.dumps(ndcg)+ " MAP:"+ json.dumps(_map) + " Recall:"+ json.dumps(recall) + " Precision:"+ json.dumps(precision))
+    row = ["dpr", args.symptom, _map["MAP@10"], _map["MAP@100"], _map["MAP@1000"], precision["P@10"], precision["P@100"], precision["P@1000"], recall["Recall@10"],\
+         recall["Recall@100"], recall["Recall@1000"], ndcg["NDCG@10"], ndcg["NDCG@100"], ndcg["NDCG@1000"]]
+
+    with open("../baselines/options/output.csv",'a+') as f:
+        writer_object = writer(f)
+        writer_object.writerow(row)
+        f.close()
     
     #### ANCE eval
     ndcg, _map, recall, precision = evaluate_ance(corpus, queries, qrels)
-    with open("../baselines/dpr.txt",'a+') as f:
-        print("Ndcg:", ndcg, "MAP:", _map, "Recall:", recall, "Precision:", precision)
-        f.write("\nNdcg:"+ json.dumps(ndcg)+ " MAP:"+ json.dumps(_map) + " Recall:"+ json.dumps(recall) + " Precision:"+ json.dumps(precision))
+    row = ["ance", args.symptom, _map["MAP@10"], _map["MAP@100"], _map["MAP@1000"], precision["P@10"], precision["P@100"], precision["P@1000"], recall["Recall@10"],\
+         recall["Recall@100"], recall["Recall@1000"], ndcg["NDCG@10"], ndcg["NDCG@100"], ndcg["NDCG@1000"]]
+
+    with open("../baselines/options/output.csv",'a+') as f:
+        writer_object = writer(f)
+        writer_object.writerow(row)
+        f.close()
 
     #### TASB eval
     ndcg, _map, recall, precision = evaluate_tasb(corpus, queries, qrels)
-    with open("../baselines/tasb.txt",'a+') as f:
-        print("Ndcg:", ndcg, "MAP:", _map, "Recall:", recall, "Precision:", precision)
-        f.write("\nNdcg:"+ json.dumps(ndcg)+ " MAP:"+ json.dumps(_map) + " Recall:"+ json.dumps(recall) + " Precision:"+ json.dumps(precision))
+    row = ["tasb", args.symptom, _map["MAP@10"], _map["MAP@100"], _map["MAP@1000"], precision["P@10"], precision["P@100"], precision["P@1000"], recall["Recall@10"],\
+         recall["Recall@100"], recall["Recall@1000"], ndcg["NDCG@10"], ndcg["NDCG@100"], ndcg["NDCG@1000"]]
+
+    with open("../baselines/options/output.csv",'a+') as f:
+        writer_object = writer(f)
+        writer_object.writerow(row)
+        f.close()
