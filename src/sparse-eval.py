@@ -155,9 +155,9 @@ def evaluate_sparta(
 
 if __name__=="__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("queries", nargs='?', default="queries_BDI_item") ### With this param we select the kind of query: only the BDI item tite, the firs question, etc.
+    parser.add_argument("symptom", nargs='?', default="sadness") ### With this param we select the kind of query: only the BDI item tite, the firs question, etc.
     args = parser.parse_args()
-    corpus,queries,qrels = load_custom_data("../dataset_format_beir/sentences.jsonl", "../dataset_format_beir/"+str(args.queries)+".jsonl", "../dataset_format_beir/qrels.tsv")
+    corpus,queries,qrels = load_custom_data("../dataset_format_beir/sentences.jsonl", "../dataset_format_beir/options/queries/queries_"+str(args.symptom)+".jsonl", "../dataset_format_beir/options/qrels/qrels_"+str(args.symptom)+".tsv")
     
     # ### DeepCT
     # configure_deepct()
@@ -185,10 +185,10 @@ if __name__=="__main__":
     gen_queries = document_expansion(corpus)
     format_pyserini_docT5(gen_queries)
     ndcg, _map, recall, precision = evaluate_docT5(queries, qrels)
-    row = ["docT5", _map["MAP@10"], _map["MAP@100"], _map["MAP@1000"], precision["P@10"], precision["P@100"], precision["P@1000"], recall["Recall@10"],\
+    row = ["docT5", args.symptom, _map["MAP@10"], _map["MAP@100"], _map["MAP@1000"], precision["P@10"], precision["P@100"], precision["P@1000"], recall["Recall@10"],\
          recall["Recall@100"], recall["Recall@1000"], ndcg["NDCG@10"], ndcg["NDCG@100"], ndcg["NDCG@1000"]]
 
-    with open("../baselines/bdi_item/output.csv",'a+') as f:
+    with open("../baselines/options/output.csv",'a+') as f:
         writer_object = writer(f)
         writer_object.writerow(row)
         f.close()
