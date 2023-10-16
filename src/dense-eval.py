@@ -57,13 +57,13 @@ def evaluate_tasb(
 
 if __name__=="__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("query", nargs='?', default="queries_BDI_item") ### With this param we select the kind of query: only the BDI item tite, the firs question, etc.
+    parser.add_argument("symptom", nargs='?', default="sadness") ### With this param we select the kind of query: only the BDI item tite, the firs question, etc.
     args = parser.parse_args()
-    corpus,queries,qrels = load_custom_data("../dataset_format_beir/sentences.jsonl", "../dataset_format_beir/"+str(args.query)+".jsonl", "../dataset_format_beir/qrels.tsv")
+    corpus,queries,qrels = load_custom_data("../dataset_format_beir/sentences.jsonl", "../dataset_format_beir/queries_"+str(args.symptom)+".jsonl", "../dataset_format_beir/qrels_"+str(args.symptom)+".tsv")
     
     #### DPR eval
     ndcg, _map, recall, precision = evaluate_dpr(corpus, queries, qrels)
-    with open("../baselines/dpr.txt",'a+') as f:
+    with open("../baselines/options/dpr.txt",'a+') as f:
         print("Ndcg:", ndcg, "MAP:", _map, "Recall:", recall, "Precision:", precision)
         f.write("\nNdcg:"+ json.dumps(ndcg)+ " MAP:"+ json.dumps(_map) + " Recall:"+ json.dumps(recall) + " Precision:"+ json.dumps(precision))
     

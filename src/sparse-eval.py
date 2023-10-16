@@ -155,36 +155,40 @@ def evaluate_sparta(
 
 if __name__=="__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("query", nargs='?', default="queries") ### With this param we select the kind of query: only the BDI item tite, the firs question, etc.
+    parser.add_argument("symptom", nargs='?', default="sadness") ### With this param we select the kind of query: only the BDI item tite, the firs question, etc.
     args = parser.parse_args()
-    corpus,queries,qrels = load_custom_data("../dataset_format_beir/sentences.jsonl", "../dataset_format_beir/"+str(args.query)+".jsonl", "../dataset_format_beir/qrels.tsv")
+    corpus,queries,qrels = load_custom_data("../dataset_format_beir/sentences.jsonl", "../dataset_format_beir/options/queries/queries_"+str(args.symptom)+".jsonl", "../dataset_format_beir/options/qrels/qrels_"+str(args.symptom)+".tsv")
     
     ### DeepCT
-    # configure_deepct()
-    # format_pyserini_deepct()
-    # ndcg, _map, recall, precision = evaluate_deepct(queries, qrels)
-    # row = ["deepct", _map["MAP@10"], _map["MAP@100"], _map["MAP@1000"], precision["P@10"], precision["P@100"], precision["P@1000"], recall["Recall@10"],\
-    #      recall["Recall@100"], recall["Recall@1000"], ndcg["NDCG@10"], ndcg["NDCG@100"], ndcg["NDCG@1000"]]
+    configure_deepct()
+    format_pyserini_deepct()
+    ndcg, _map, recall, precision = evaluate_deepct(queries, qrels)
+    row = ["deepct", args.symptom, _map["MAP@10"], _map["MAP@100"], _map["MAP@1000"], precision["P@10"], precision["P@100"], precision["P@1000"], recall["Recall@10"],\
+         recall["Recall@100"], recall["Recall@1000"], ndcg["NDCG@10"], ndcg["NDCG@100"], ndcg["NDCG@1000"]]
 
-    # with open("../baselines/bdi_item/output.csv",'a+') as f:
-    #     writer_object = writer(f)
-    #     writer_object.writerow(row)
-    #     f.close()
+    with open("../baselines/options/output.csv",'a+') as f:
+        writer_object = writer(f)
+        writer_object.writerow(row)
+        f.close()
     
-    # ### SPARTA
-    # ndcg, _map, recall, precision = evaluate_sparta(corpus, queries, qrels)
-    # row = ["sparta", _map["MAP@10"], _map["MAP@100"], _map["MAP@1000"], precision["P@10"], precision["P@100"], precision["P@1000"], recall["Recall@10"],\
-    #      recall["Recall@100"], recall["Recall@1000"], ndcg["NDCG@10"], ndcg["NDCG@100"], ndcg["NDCG@1000"]]
+    ### SPARTA
+    ndcg, _map, recall, precision = evaluate_sparta(corpus, queries, qrels)
+    row = ["sparta", args.symptom, _map["MAP@10"], _map["MAP@100"], _map["MAP@1000"], precision["P@10"], precision["P@100"], precision["P@1000"], recall["Recall@10"],\
+         recall["Recall@100"], recall["Recall@1000"], ndcg["NDCG@10"], ndcg["NDCG@100"], ndcg["NDCG@1000"]]
 
-    # with open("../baselines/bdi_item/output.csv",'a+') as f:
-    #     writer_object = writer(f)
-    #     writer_object.writerow(row)
-    #     f.close()
+    with open("../baselines/options/output.csv",'a+') as f:
+        writer_object = writer(f)
+        writer_object.writerow(row)
+        f.close()
 
     ### DocT5Query
-    gen_queries = document_expansion(corpus)
-    format_pyserini_docT5(gen_queries)
-    ndcg, _map, recall, precision = evaluate_docT5(queries, qrels)
-    with open("../baselines/docT5.txt",'a+') as f:
-        print("Ndcg:", ndcg, "MAP:", _map, "Recall:", recall, "Precision:", precision)
-        f.write("\nNdcg:"+ json.dumps(ndcg)+ " MAP:"+ json.dumps(_map) + " Recall:"+ json.dumps(recall) + " Precision:"+ json.dumps(precision))
+    # gen_queries = document_expansion(corpus)
+    # format_pyserini_docT5(gen_queries)
+    # ndcg, _map, recall, precision = evaluate_docT5(queries, qrels)
+    # row = ["docT5", _map["MAP@10"], _map["MAP@100"], _map["MAP@1000"], precision["P@10"], precision["P@100"], precision["P@1000"], recall["Recall@10"],\
+    #      recall["Recall@100"], recall["Recall@1000"], ndcg["NDCG@10"], ndcg["NDCG@100"], ndcg["NDCG@1000"]]
+
+    # with open("../baselines/bdi_item/output.csv",'a+') as f:
+    #     writer_object = writer(f)
+    #     writer_object.writerow(row)
+    #     f.close()
