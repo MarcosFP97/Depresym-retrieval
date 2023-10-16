@@ -60,7 +60,7 @@ if __name__=="__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("symptom", nargs='?', default="sadness") ### With this param we select the kind of query: only the BDI item tite, the firs question, etc.
     args = parser.parse_args()
-    corpus,queries,qrels = load_custom_data("../dataset_format_beir/sentences.jsonl", "../dataset_format_beir/queries_"+str(args.symptom)+".jsonl", "../dataset_format_beir/qrels_"+str(args.symptom)+".tsv")
+    corpus,queries,qrels = load_custom_data("../dataset_format_beir/sentences.jsonl", "../dataset_format_beir/options/queries/queries_"+str(args.symptom)+".jsonl", "../dataset_format_beir/options/qrels/qrels_"+str(args.symptom)+".tsv")
     
     #### DPR eval
     ndcg, _map, recall, precision = evaluate_dpr(corpus, queries, qrels)
