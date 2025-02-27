@@ -101,7 +101,7 @@ def rerank(
     k:int
 ):
     cross_encoder_model = CrossEncoder(model_name,max_length=512) #'cross-encoder/ms-marco-MiniLM-L-6-v2'
-    reranker = Rerank(cross_encoder_model, batch_size=128)
+    reranker = Rerank(cross_encoder_model, batch_size=16)
     rerank_results = reranker.rerank(corpus, queries, results, top_k=k)
     sorted_rerank_results = order_results(rerank_results)
     final_results = {}
@@ -213,28 +213,31 @@ def format_pyserini_docT5(
 if __name__=="__main__":
     #### OPTIONS
     parser = argparse.ArgumentParser()
-    parser.add_argument("symptom", nargs='?', default="sadness") ### With this param we select the kind of query: only the BDI item tite, the firs question, a symptom, etc.
+    parser.add_argument("symptom", nargs='?', default="agitation") ### With this param we select the kind of query: only the BDI item tite, the firs question, a symptom, etc.
     args = parser.parse_args()
     corpus,queries,qrels = load_custom_data("../dataset_format_beir/sentences.jsonl", "../dataset_format_beir/options/queries/queries_"+str(args.symptom)+".jsonl", "../dataset_format_beir/options/qrels/qrels_"+str(args.symptom)+".tsv")
     
-    ### TITLE 
+    # TITLE 
     # corpus,queries,qrels = load_custom_data("../dataset_format_beir/sentences.jsonl", "../dataset_format_beir/queries.jsonl", "../dataset_format_beir/qrels.tsv")
+    
     # format_pyserini(corpus)
     # configure_deepct()
     # format_pyserini_deepct()
     # retriever, results = search_bm25(queries)
-    retriever, results = semantic_search(queries,'princeton-nlp/sup-simcse-roberta-base')
-    ndcg, _map, recall, precision = EvaluateRetrieval.evaluate(qrels, results, retriever.k_values)
+    retriever, results = semantic_search(queries,"paraphrase-multilingual-MiniLM-L12-v2")
     # gen_queries = document_expansion(corpus)
     # format_pyserini_docT5(gen_queries)
     # retriever, results = search_bm25(queries, qrels)
+    # with open("result.json") as f:
+    #     results = json.load(f)
     sorted_results = order_results(results)
-    custom_reranker = 'princeton-nlp/unsup-simcse-roberta-base'
-    # ndcg, _map, recall, precision = rerank(custom_reranker, retriever, sorted_results, qrels, 25)
-    row = ["roberta simcse sup", args.symptom, _map["MAP@10"], _map["MAP@100"], _map["MAP@1000"], precision["P@10"], precision["P@100"], precision["P@1000"], recall["Recall@10"],\
+    
+    custom_reranker = '/home/marcos.fernandez.pichel/PhD/cross-domain-symptom-detection/src/training/SimCSE/result/disorbert-wiki1m'
+    ndcg, _map, recall, precision = rerank(custom_reranker, retriever, sorted_results, qrels, 25)
+    row = ["multi + disorbert-wiki1m",25, args.symptom, _map["MAP@10"], _map["MAP@100"], _map["MAP@1000"], precision["P@5"], precision["P@10"], precision["P@100"], precision["P@1000"], recall["Recall@10"],\
          recall["Recall@100"], recall["Recall@1000"], ndcg["NDCG@10"], ndcg["NDCG@100"], ndcg["NDCG@1000"]]
 
-    with open("../baselines/options/custom.csv",'a+') as f:
-        writer_object = writer(f)
-        writer_object.writerow(row)
-        f.close()
+    with open("../baselines/options/custom_rerank.csv",'a+') as f:
+       writer_object = writer(f)
+       writer_object.writerow(row)
+       f.close()

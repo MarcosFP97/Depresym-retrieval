@@ -1,5 +1,6 @@
 import argparse
 import json
+import pandas as pd
 from csv import writer
 
 from beir.datasets.data_loader import GenericDataLoader
@@ -20,7 +21,7 @@ def load_custom_data(
     
     return corpus, queries, qrels
 
-def evaluate_sentence_transf(
+def evaluate_retrieval(
     model_name:str,
     corpus:object,
     queries:object,
@@ -29,19 +30,38 @@ def evaluate_sentence_transf(
     model = DRES(models.SentenceBERT(model_name))
     retriever = EvaluateRetrieval(model, score_function="dot")
     results = retriever.retrieve(corpus, queries)
+    error_analysis = pd.DataFrame(columns=["opción", "sentence_id", "sentence", "rel_score"])
+    print(results['3'])
+    for k,v in results.items():
+        top_k=0
+        for sid in v.keys():
+            top_k+=1
+            sentence = corpus[sid]['text']
+            try:
+                rel = qrels[str(k)][sid]
+            except:
+                rel=0
+            error_analysis.loc[len(error_analysis)] = [k, sid, sentence, rel]
+            if top_k==10:
+                break
+
+    print(error_analysis)
+
     ndcg, _map, recall, precision = retriever.evaluate(qrels, results, retriever.k_values)
     return ndcg, _map, recall, precision
+    
 
 if __name__=="__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("symptom", nargs='?', default="sadness") ### With this param we select the kind of query: only the BDI item tite, the firs question, etc.
+    parser.add_argument("symptom", nargs='?', default="loss of interest") ### With this param we select the kind of query: only the BDI item tite, the firs question, etc.
     args = parser.parse_args()
-    # corpus,queries,qrels = load_custom_data("../dataset_format_beir/sentences.jsonl", "../dataset_format_beir/options/queries/queries_"+str(args.symptom)+".jsonl", "../dataset_format_beir/options/qrels/qrels_"+str(args.symptom)+".tsv")
-    corpus,queries,qrels = load_custom_data("../dataset_format_beir/sentences.jsonl", "../dataset_format_beir/queries.jsonl", "../dataset_format_beir/qrels.tsv")
-    model = 'princeton-nlp/unsup-simcse-roberta-base'
-    #sr_model = 'citiusLTL/DisorBERT'
-    ndcg, _map, recall, precision = evaluate_sentence_transf(model, corpus, queries, qrels)
-    row = [_map["MAP@10"], _map["MAP@100"], _map["MAP@1000"], precision["P@10"], precision["P@100"], precision["P@1000"], recall["Recall@10"],\
+    corpus,queries,qrels = load_custom_data("../dataset_format_beir/sentences.jsonl", "../dataset_format_beir/options/queries/queries_"+str(args.symptom)+".jsonl", "../dataset_format_beir/options/qrels/qrels_"+str(args.symptom)+".tsv")
+    model_name = "all-mpnet-base-v2"
+    ndcg, _map, recall, precision = evaluate_retrieval(model_name, corpus, queries, qrels)
+    row = [model_name, args.symptom, _map["MAP@10"], _map["MAP@100"], _map["MAP@1000"], precision["P@10"], precision["P@100"], precision["P@1000"], recall["Recall@10"],\
          recall["Recall@100"], recall["Recall@1000"], ndcg["NDCG@10"], ndcg["NDCG@100"], ndcg["NDCG@1000"]]
 
-    print(row)
+    # with open("../baselines/options/output.csv",'a+') as f:
+    #     writer_object = writer(f)
+    #     writer_object.writerow(row)
+    #     f.close()
