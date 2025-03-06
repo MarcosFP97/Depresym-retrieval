@@ -21,8 +21,18 @@ def load_custom_data(
     
     return corpus, queries, qrels
 
+def order_results(
+    results:dict
+):
+    sorted_results = {}
+    for qid, res in results.items():
+        sorted_results[qid] = dict(sorted(res.items(), key=lambda item: item[1],reverse=True))
+
+    return sorted_results
+
 def evaluate_retrieval(
     model_name:str,
+    symptom:str,
     corpus:object,
     queries:object,
     qrels:object
@@ -31,8 +41,8 @@ def evaluate_retrieval(
     retriever = EvaluateRetrieval(model, score_function="dot")
     results = retriever.retrieve(corpus, queries)
     error_analysis = pd.DataFrame(columns=["opción", "sentence_id", "sentence", "rel_score"])
-    print(results['3'])
-    for k,v in results.items():
+    ordered_results = order_results(results)
+    for k,v in ordered_results.items():
         top_k=0
         for sid in v.keys():
             top_k+=1
@@ -44,20 +54,18 @@ def evaluate_retrieval(
             error_analysis.loc[len(error_analysis)] = [k, sid, sentence, rel]
             if top_k==10:
                 break
-
-    print(error_analysis)
-
+    error_analysis.to_csv(f'../error_analysis/{symptom}.csv', index=False)
     ndcg, _map, recall, precision = retriever.evaluate(qrels, results, retriever.k_values)
     return ndcg, _map, recall, precision
     
 
 if __name__=="__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("symptom", nargs='?', default="loss of interest") ### With this param we select the kind of query: only the BDI item tite, the firs question, etc.
+    parser.add_argument("symptom", nargs='?', default="past failure") ### With this param we select the kind of query: only the BDI item tite, the firs question, etc.
     args = parser.parse_args()
     corpus,queries,qrels = load_custom_data("../dataset_format_beir/sentences.jsonl", "../dataset_format_beir/options/queries/queries_"+str(args.symptom)+".jsonl", "../dataset_format_beir/options/qrels/qrels_"+str(args.symptom)+".tsv")
     model_name = "all-mpnet-base-v2"
-    ndcg, _map, recall, precision = evaluate_retrieval(model_name, corpus, queries, qrels)
+    ndcg, _map, recall, precision = evaluate_retrieval(model_name, str(args.symptom), corpus, queries, qrels)
     row = [model_name, args.symptom, _map["MAP@10"], _map["MAP@100"], _map["MAP@1000"], precision["P@10"], precision["P@100"], precision["P@1000"], recall["Recall@10"],\
          recall["Recall@100"], recall["Recall@1000"], ndcg["NDCG@10"], ndcg["NDCG@100"], ndcg["NDCG@1000"]]
 
