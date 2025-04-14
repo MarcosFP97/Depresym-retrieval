@@ -1,0 +1,85 @@
+{
+    "os": "Linux-5.4.0-205-generic-x86_64-with-glibc2.31",
+    "python": "3.9.7",
+    "heartbeatAt": "2025-04-14T11:55:30.238381",
+    "startedAt": "2025-04-14T11:55:29.999043",
+    "docker": null,
+    "cuda": null,
+    "args": [],
+    "state": "running",
+    "program": "/home/marcos.fernandez.pichel/PhD/Depresym-retrieval/src/train.py",
+    "codePath": "src/train.py",
+    "git": {
+        "remote": "git@github.com:MarcosFP97/Depresym-retrieval.git",
+        "commit": "1598fd91cd5bf4a55315c04e1f4aa1781b2e482a"
+    },
+    "email": "marcosfernandez.pichel@usc.es",
+    "root": "/home/marcos.fernandez.pichel/PhD/Depresym-retrieval",
+    "host": "ctdesks56",
+    "username": "marcos.fernandez.pichel",
+    "executable": "/home/marcos.fernandez.pichel/anaconda3/bin/python",
+    "cpu_count": 8,
+    "cpu_count_logical": 8,
+    "cpu_freq": {
+        "current": 4609.42275,
+        "min": 800.0,
+        "max": 4900.0
+    },
+    "cpu_freq_per_core": [
+        {
+            "current": 4603.032,
+            "min": 800.0,
+            "max": 4900.0
+        },
+        {
+            "current": 4608.845,
+            "min": 800.0,
+            "max": 4900.0
+        },
+        {
+            "current": 4606.557,
+            "min": 800.0,
+            "max": 4900.0
+        },
+        {
+            "current": 4602.353,
+            "min": 800.0,
+            "max": 4900.0
+        },
+        {
+            "current": 4628.25,
+            "min": 800.0,
+            "max": 4900.0
+        },
+        {
+            "current": 4609.07,
+            "min": 800.0,
+            "max": 4900.0
+        },
+        {
+            "current": 4694.304,
+            "min": 800.0,
+            "max": 4900.0
+        },
+        {
+            "current": 4663.52,
+            "min": 800.0,
+            "max": 4900.0
+        }
+    ],
+    "disk": {
+        "total": 95.56377410888672,
+        "used": 80.09974670410156
+    },
+    "gpu": "NVIDIA GeForce RTX 4070 Ti",
+    "gpu_count": 1,
+    "gpu_devices": [
+        {
+            "name": "NVIDIA GeForce RTX 4070 Ti",
+            "memory_total": 12878610432
+        }
+    ],
+    "memory": {
+        "total": 31.270587921142578
+    }
+}
