@@ -57,6 +57,41 @@ def format_data(
             fp.write(json.dumps(doc)+'\n')
 
 
+def format_24(
+    ddir:str # dir file containing the corpus and the majority qrels
+)-> None:
+    pools = pd.read_csv(ddir+'/pools_2024_t3.csv')
+    pools["query_num"]+=1
+    qrels = pd.read_csv(ddir+'/majority_erisk_2024.csv',  sep='\t', names=["query", "Q0", "doc_id", "rel_score"])
+    with open('../dataset_format_beir/2024/sentences_only_text.jsonl', 'w') as fp: ## Save sentences file
+        for _, row in pools.iterrows():
+            doc = {}
+            doc["id"] = row["doc_id"]
+            doc["text"] = row["text"]
+            doc["title"] = ""
+            fp.write(json.dumps(doc)+'\n') 
+    
+    qrels = qrels.drop(columns=['Q0'])
+    for _,g in qrels.groupby('query'):
+        ### This part generates one query file per BDI item options
+        query_id = g.iloc[0,:]["query"]
+        print(query_id)
+        qs = pools[pools["query_num"]==query_id].iloc[0,:]["query_str"].split('\n')
+        qs = qs[:-1]  ### removes last trail line
+        title = qs[0].replace(':', '').lower()
+        query_nb = len(qs[1:]) ### variable number of options per bdi symptom
+
+        qrels_symptom = pd.DataFrame()
+        g["query"] = [1]*len(g)
+        for i in range(query_nb):
+            duplicate = g.copy()
+            duplicate.iloc[:,0] = duplicate.iloc[:,0] + i
+            qrels_symptom = qrels_symptom.append(duplicate)
+
+        qrels_symptom['query'] = qrels_symptom['query'].astype(str)
+        qrels_symptom.to_csv('../dataset_format_beir/2024/options/qrels/qrels_'+title+'.tsv', sep='\t', header=False, index=False)
+
+
 '''
 This method takes the pools file and the qrels file in TREC format and generates the qrels per symptom, queries per symptom and corpus file
 
@@ -127,5 +162,5 @@ def format_options(
 
 if __name__=="__main__":
     # format_qrels("../original_dataset/qrels-majority.txt")
-    # format_data("../original_dataset/pools_docnos.json")
-    format_options("../original_dataset/pools_docnos.json", "../original_dataset/qrels-majority.txt")
+    format_24("../original_dataset/2024")
+    # format_options("../original_dataset/pools_docnos.json", "../original_dataset/qrels-majority.txt")
