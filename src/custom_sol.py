@@ -36,10 +36,10 @@ def order_results(
 
     return sorted_results
 
-disor_tokenizer = AutoTokenizer.from_pretrained("citiusLTL/DisorBERT")
-disor_model = AutoModelForMaskedLM.from_pretrained("citiusLTL/DisorBERT").to('cuda:0')
+# disor_tokenizer = AutoTokenizer.from_pretrained("citiusLTL/DisorBERT")
+# disor_model = AutoModelForMaskedLM.from_pretrained("citiusLTL/DisorBERT").to('cuda:0')
 pronouns_first_person = {"i", "me", "my", "mine", "we", "us", "our", "ours"}
-pronouns_second_person = {"you", "your", "yours"}
+# pronouns_second_person = {"you", "your", "yours"}
 
 
 nlp = spacy.load("en_core_web_sm")
@@ -125,8 +125,8 @@ def missing_rels(
     return found_irrels, missed_rels
 
 
-nli_model = AutoModelForSequenceClassification.from_pretrained('cross-encoder/nli-deberta-v3-base').to("cuda:0")
-nli_tokenizer = AutoTokenizer.from_pretrained('cross-encoder/nli-deberta-v3-base')
+# nli_model = AutoModelForSequenceClassification.from_pretrained('cross-encoder/nli-deberta-v3-base').to("cuda:0")
+# nli_tokenizer = AutoTokenizer.from_pretrained('cross-encoder/nli-deberta-v3-base')
 
 def nli(
     ordered_results: dict,
@@ -153,9 +153,9 @@ def nli(
 
     return ordered_results
 
-disor_model_name = "citiusLTL/DisorBERT"  
-tokenizer = AutoTokenizer.from_pretrained(disor_model_name)
-disor_model = AutoModelForMaskedLM.from_pretrained(disor_model_name).to('cuda:0')
+# disor_model_name = "citiusLTL/DisorBERT"  
+# tokenizer = AutoTokenizer.from_pretrained(disor_model_name)
+# disor_model = AutoModelForMaskedLM.from_pretrained(disor_model_name).to('cuda:0')
 
 def compute_perplexity(sentence):
     input_ids = tokenizer.encode(sentence, return_tensors='pt').to('cuda:0')
@@ -237,14 +237,14 @@ if __name__=="__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("symptom", nargs='?', default="self-dislike") ### With this param we select the kind of query: only the BDI item tite, the firs question, etc.
     args = parser.parse_args()
-    corpus,queries,qrels = load_custom_data("../dataset_format_beir/sentences.jsonl", "../dataset_format_beir/options/queries/queries_"+str(args.symptom)+".jsonl", "../dataset_format_beir/options/qrels/qrels_"+str(args.symptom)+".tsv")
-    model_name = './models/three-epochs-random-model' # "all-mpnet-base-v2" #
+    corpus,queries,qrels = load_custom_data("../dataset_format_beir/2024/sentences_only_text.jsonl", "../dataset_format_beir/options/queries/queries_"+str(args.symptom)+".jsonl", "../dataset_format_beir/2024/options/qrels/qrels_"+str(args.symptom)+".tsv")
+    model_name = "all-mpnet-base-v2" # './models/three-epochs-random-model' # 
     ndcg, _map, recall, precision = evaluate_retrieval(model_name, str(args.symptom), corpus, queries, qrels)
-    row = ["three-random", args.symptom, _map["MAP@10"], _map["MAP@100"], _map["MAP@1000"], precision["P@10"], precision["P@100"], precision["P@1000"], recall["Recall@10"],\
+    row = ["all+pos", args.symptom, _map["MAP@10"], _map["MAP@100"], _map["MAP@1000"], precision["P@10"], precision["P@100"], precision["P@1000"], recall["Recall@10"],\
          recall["Recall@100"], recall["Recall@1000"], ndcg["NDCG@10"], ndcg["NDCG@100"], ndcg["NDCG@1000"]]
 
     print(row)
-    with open("../custom_sols/output.csv",'a+') as f:
+    with open("../custom_sols/output_2024.csv",'a+') as f:
         writer_object = writer(f)
         writer_object.writerow(row)
         f.close()

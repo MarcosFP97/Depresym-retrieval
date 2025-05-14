@@ -40,21 +40,21 @@ def evaluate_retrieval(
     model = DRES(models.SentenceBERT(model_name))
     retriever = EvaluateRetrieval(model, score_function="dot")
     results = retriever.retrieve(corpus, queries)
-    error_analysis = pd.DataFrame(columns=["opción", "sentence_id", "sentence", "rel_score"])
-    ordered_results = order_results(results)
-    for k,v in ordered_results.items():
-        top_k=0
-        for sid in v.keys():
-            top_k+=1
-            sentence = corpus[sid]['text']
-            try:
-                rel = qrels[str(k)][sid]
-            except:
-                rel=0
-            error_analysis.loc[len(error_analysis)] = [k, sid, sentence, rel]
-            if top_k==10:
-                break
-    error_analysis.to_csv(f'../error_analysis/{symptom}.csv', index=False)
+    # error_analysis = pd.DataFrame(columns=["opción", "sentence_id", "sentence", "rel_score"])
+    # ordered_results = order_results(results)
+    # for k,v in ordered_results.items():
+    #     top_k=0
+    #     for sid in v.keys():
+    #         top_k+=1
+    #         sentence = corpus[sid]['text']
+    #         try:
+    #             rel = qrels[str(k)][sid]
+    #         except:
+    #             rel=0
+    #         error_analysis.loc[len(error_analysis)] = [k, sid, sentence, rel]
+    #         if top_k==10:
+    #             break
+    # error_analysis.to_csv(f'../error_analysis/{symptom}.csv', index=False)
     ndcg, _map, recall, precision = retriever.evaluate(qrels, results, retriever.k_values)
     return ndcg, _map, recall, precision
     
@@ -64,6 +64,7 @@ if __name__=="__main__":
     parser.add_argument("symptom", nargs='?', default="past failure") ### With this param we select the kind of query: only the BDI item tite, the firs question, etc.
     args = parser.parse_args()
     corpus,queries,qrels = load_custom_data("../dataset_format_beir/2024/sentences_only_text.jsonl", "../dataset_format_beir/options/queries/queries_"+str(args.symptom)+".jsonl", "../dataset_format_beir/2024/options/qrels/qrels_"+str(args.symptom)+".tsv")
+    print(len(corpus))
     model_name = "all-mpnet-base-v2"
     ndcg, _map, recall, precision = evaluate_retrieval(model_name, str(args.symptom), corpus, queries, qrels)
     row = [model_name, args.symptom, _map["MAP@10"], _map["MAP@100"], _map["MAP@1000"], precision["P@10"], precision["P@100"], precision["P@1000"], recall["Recall@10"],\
