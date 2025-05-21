@@ -220,11 +220,11 @@ if __name__=="__main__":
     # TITLE 
     # corpus,queries,qrels = load_custom_data("../dataset_format_beir/sentences.jsonl", "../dataset_format_beir/queries.jsonl", "../dataset_format_beir/qrels.tsv")
     
-    # format_pyserini(corpus)
+    format_pyserini(corpus)
     # configure_deepct()
     # format_pyserini_deepct()
-    # retriever, results = search_bm25(queries)
-    retriever, results = semantic_search(queries,"paraphrase-multilingual-MiniLM-L12-v2")
+    retriever, results = search_bm25(queries)
+    # retriever, results = semantic_search(queries,"paraphrase-multilingual-MiniLM-L12-v2")
     # gen_queries = document_expansion(corpus)
     # format_pyserini_docT5(gen_queries)
     # retriever, results = search_bm25(queries, qrels)
@@ -232,12 +232,12 @@ if __name__=="__main__":
     #     results = json.load(f)
     sorted_results = order_results(results)
     
-    custom_reranker = '/home/marcos.fernandez.pichel/PhD/cross-domain-symptom-detection/src/training/SimCSE/result/disorbert-wiki1m'
-    ndcg, _map, recall, precision = rerank(custom_reranker, retriever, sorted_results, qrels, 25)
-    row = ["multi + disorbert-wiki1m",25, args.symptom, _map["MAP@10"], _map["MAP@100"], _map["MAP@1000"], precision["P@5"], precision["P@10"], precision["P@100"], precision["P@1000"], recall["Recall@10"],\
+    custom_reranker = 'cross-encoder/ms-marco-MiniLM-L-6-v2' #'/home/marcos.fernandez.pichel/PhD/cross-domain-symptom-detection/src/training/SimCSE/result/disorbert-wiki1m'
+    ndcg, _map, recall, precision = rerank(custom_reranker, retriever, sorted_results, qrels, 100)
+    row = ["bm25+cefull",100, args.symptom, _map["MAP@10"], _map["MAP@100"], _map["MAP@1000"], precision["P@5"], precision["P@10"], precision["P@100"], precision["P@1000"], recall["Recall@10"],\
          recall["Recall@100"], recall["Recall@1000"], ndcg["NDCG@10"], ndcg["NDCG@100"], ndcg["NDCG@1000"]]
 
-    with open("../baselines/options/custom_rerank.csv",'a+') as f:
+    with open("../baselines/options/output.csv",'a+') as f:
        writer_object = writer(f)
        writer_object.writerow(row)
        f.close()
