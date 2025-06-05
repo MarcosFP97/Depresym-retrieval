@@ -3,15 +3,24 @@ import json
 import faiss
 from datasets import Dataset, load_dataset
 from sentence_transformers.evaluation import EmbeddingSimilarityEvaluator
-from sentence_transformers import losses, SentenceTransformer
+from sentence_transformers import losses, SentenceTransformer, models
 from sentence_transformers.trainer import SentenceTransformerTrainer
 from sentence_transformers.training_args import SentenceTransformerTrainingArguments
 from itertools import permutations
 
-SR_MODEL = SentenceTransformer("all-mpnet-base-v2", device='cuda:0')#, device=torch.device("mps"))
+ALL_MODEL = SentenceTransformer("all-mpnet-base-v2", device='cuda:0')#, device=torch.device("mps"))
+
+word_embedding_model = models.Transformer("facebook/contriever")
+pooling_model = models.Pooling(
+    word_embedding_model.get_word_embedding_dimension(),
+    pooling_mode_mean_tokens=True,
+    pooling_mode_cls_token=False,
+    pooling_mode_max_tokens=False
+)
+SR_MODEL = SentenceTransformer(modules=[word_embedding_model, pooling_model])
 
 def index(items: list):
-    embeddings = SR_MODEL.encode(
+    embeddings = ALL_MODEL.encode(
         items,
         convert_to_numpy=True,
         normalize_embeddings=True
@@ -26,7 +35,7 @@ def search_sim_symptom(
     query:str,
     items:list
 ):
-    query_embedding = SR_MODEL.encode([query], convert_to_numpy=True, device='cuda:0', normalize_embeddings=True)#.to('cuda:0')
+    query_embedding = ALL_MODEL.encode([query], convert_to_numpy=True, device='cuda:0', normalize_embeddings=True)#.to('cuda:0')
     D, I = idx.search(query_embedding, k=2) ### we get the second most similar, to exclude similarity with itself
     return items[I[0][1]]
 
@@ -48,43 +57,44 @@ with open('../dataset_format_beir/queries_BDI_item.jsonl') as f:
 
 idx = index(items) ### create FAISS index
 
+
 ## BDI QUESTIONNAIRE
-# train_dataset = {"anchor": [], "positive": [], "negative": []}
-# symptoms = bdi.keys()
-# random.seed(42)
-# for k in bdi.keys():
-#     options = bdi[k]
-#     combinations = list(permutations(options, 2))  # Genera todas las permutaciones de 2 elementos
-#     for comb in combinations:
-#         train_dataset["anchor"].append(comb[0])
-#         train_dataset["positive"].append(comb[1])
-#         sim_symptom = search_sim_symptom(idx, k, items) #### we search by symptom title (e.g. "Sadness")
-#         symptom_key = sim_symptom.split('\n\t')[0].replace(':','')
-#         #random_symptom = random.choice([x for x in symptoms if x != k])
-#         random_options = bdi[symptom_key]
-#         random_negative = random.choice(random_options) ### from the most similar symptom, we pick a random option
-#         train_dataset["negative"].append(random_negative) ### random_negatives strategy
-# train_dataset = Dataset.from_dict(train_dataset)
-
-
-#### SYNT DATA
 train_dataset = {"anchor": [], "positive": [], "negative": []}
-with open('gpt4-data.json') as f:
-  SYNT_DATA = json.load(f)
-symptoms = SYNT_DATA.keys()
+symptoms = bdi.keys()
 random.seed(42)
-for k in SYNT_DATA.keys():
-    sents = SYNT_DATA[k]
-    combinations = list(permutations(sents, 2))  # Genera todas las permutaciones de 2 elementos
+for k in bdi.keys():
+    options = bdi[k]
+    combinations = list(permutations(options, 2))  # Genera todas las permutaciones de 2 elementos
     for comb in combinations:
         train_dataset["anchor"].append(comb[0])
         train_dataset["positive"].append(comb[1])
         sim_symptom = search_sim_symptom(idx, k, items) #### we search by symptom title (e.g. "Sadness")
         symptom_key = sim_symptom.split('\n\t')[0].replace(':','')
-        # random_symptom = random.choice([x for x in symptoms if x != k])
-        random_options = SYNT_DATA[symptom_key]
+        #random_symptom = random.choice([x for x in symptoms if x != k])
+        random_options = bdi[symptom_key]
         random_negative = random.choice(random_options) ### from the most similar symptom, we pick a random option
         train_dataset["negative"].append(random_negative) ### random_negatives strategy
+train_dataset = Dataset.from_dict(train_dataset)
+
+
+#### SYNT DATA
+# train_dataset = {"anchor": [], "positive": [], "negative": []}
+# with open('gpt4-data.json') as f:
+#   SYNT_DATA = json.load(f)
+# symptoms = SYNT_DATA.keys()
+# random.seed(42)
+# for k in SYNT_DATA.keys():
+#     sents = SYNT_DATA[k]
+#     combinations = list(permutations(sents, 2))  # Genera todas las permutaciones de 2 elementos
+#     for comb in combinations:
+#         train_dataset["anchor"].append(comb[0])
+#         train_dataset["positive"].append(comb[1])
+#         sim_symptom = search_sim_symptom(idx, k, items) #### we search by symptom title (e.g. "Sadness")
+#         symptom_key = sim_symptom.split('\n\t')[0].replace(':','')
+#         # random_symptom = random.choice([x for x in symptoms if x != k])
+#         random_options = SYNT_DATA[symptom_key]
+#         random_negative = random.choice(random_options) ### from the most similar symptom, we pick a random option
+#         train_dataset["negative"].append(random_negative) ### random_negatives strategy
 
 examples = list(zip(train_dataset["anchor"], train_dataset["positive"], train_dataset["negative"]))
 # Barajar los ejemplos
@@ -134,7 +144,7 @@ train_loss = losses.MultipleNegativesRankingLoss(model=SR_MODEL) # # Loss functi
 
 # # # # Define the training arguments
 args = SentenceTransformerTrainingArguments( #### pensar si tiene sentido usar WandDB
-    output_dir="./models/gpt4-sim-logging",
+    output_dir="./models/contr-bdi-sim-logging",
     num_train_epochs=3,
     per_device_train_batch_size=32,
     per_device_eval_batch_size=32,
@@ -153,5 +163,5 @@ trainer = SentenceTransformerTrainer(
     evaluator=evaluator
 )
 trainer.train()
-SR_MODEL.save('./models/gpt4-sim-model')
+SR_MODEL.save('./models/contr-bdi-sim-model')
 print(evaluator(SR_MODEL))

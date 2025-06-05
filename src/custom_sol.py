@@ -1,14 +1,14 @@
 import argparse
 import spacy
-import pandas as pd
 import json
 from csv import writer
 import torch
+import pickle
 import math
 import torch.nn.functional as F
 
 from transformers import AutoTokenizer, AutoModelForMaskedLM, AutoModelForSequenceClassification
-
+from sentence_transformers import SentenceTransformer
 from beir.datasets.data_loader import GenericDataLoader
 from beir.retrieval import models
 from beir.retrieval.evaluation import EvaluateRetrieval
@@ -183,26 +183,38 @@ def compute_perplexity(sentence):
 
 def evaluate_retrieval(
     model_name:str,
-    symptom:str,
     corpus:object,
     queries:object,
     qrels:object
 ):
-    model = DRES(models.SentenceBERT(model_name))
+    model = models.SentenceBERT(model_name)
+    # model.q_model = model_name  # Tu SentenceTransformer con pooling
+    # model.doc_model = model_name
+    model = DRES(model)
     retriever = EvaluateRetrieval(model, score_function="dot")
     results = retriever.retrieve(corpus, queries)
 
     ### BUCLE QUE ITERE POR RESULTS Y HAGA UN VOTING SCORE
-    # for q in results.keys():
-    #     for sid, val in results[q].items():
-    #         sent = corpus[sid]['text']
-    #         # print("SENT", sent)
-    #         # disor_prob = compute_perplexity(sent)
-    #         # val = 0.8*val+0.2*disor_prob
-    #         pos_score = pos(sent)
-    #         results[q][sid] = val + pos_score
-
-    # print(ordered_results.keys())
+    for q in results.keys():
+        for sid, val in results[q].items():
+            sent = corpus[sid]['text']
+            pos_score = pos(sent)
+            results[q][sid] = val + pos_score
+    
+    ordered_results = order_results(results)
+    sents = []
+    for docid in list(ordered_results['2'].keys())[:50]:
+        text = corpus[docid]['text']
+        sents.append(text)
+    sbert_model = SentenceTransformer(model_name)
+    embeddings = sbert_model.encode(sents, normalize_embeddings=True)
+    with open("punishment_pre_embeddings.pkl", "wb") as f:
+        pickle.dump((sents, embeddings), f)
+    # for docid in list(ordered_results['2'].keys())[:10]:
+    #     try:
+    #         print(f'Doc ID:{docid} - {corpus[docid]}- {qrels["2"][docid]}')
+    #     except:
+    #         print(f'Doc ID:{docid} - {corpus[docid]}- 0')
     # found_irrels, missed_rels = missing_rels(ordered_results, symptom)
 
     
@@ -235,16 +247,27 @@ def evaluate_retrieval(
 
 if __name__=="__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("symptom", nargs='?', default="self-dislike") ### With this param we select the kind of query: only the BDI item tite, the firs question, etc.
+    parser.add_argument("symptom", nargs='?', default="punishment feelings") ### With this param we select the kind of query: only the BDI item tite, the firs question, etc.
     args = parser.parse_args()
-    corpus,queries,qrels = load_custom_data("../dataset_format_beir/2024/sentences_only_text.jsonl", "../dataset_format_beir/options/queries/queries_"+str(args.symptom)+".jsonl", "../dataset_format_beir/2024/options/qrels/qrels_"+str(args.symptom)+".tsv")
-    model_name = "all-mpnet-base-v2" #   './models/gpt4-sim-model' # 
-    ndcg, _map, recall, precision = evaluate_retrieval(model_name, str(args.symptom), corpus, queries, qrels)
-    row = ["all", args.symptom, _map["MAP@10"], _map["MAP@100"], _map["MAP@1000"], precision["P@10"], precision["P@100"], precision["P@1000"], recall["Recall@10"],\
-         recall["Recall@100"], recall["Recall@1000"], ndcg["NDCG@10"], ndcg["NDCG@100"], ndcg["NDCG@1000"]]
+    corpus,queries,qrels = load_custom_data("../dataset_format_beir/sentences.jsonl", "../dataset_format_beir/options/queries/queries_"+str(args.symptom)+".jsonl", "../dataset_format_beir/options/qrels/qrels_"+str(args.symptom)+".tsv")
+    print(len(corpus))
+    
+    # contriever_model_name = "facebook/contriever" #### contriever
+    # word_embedding_model = sentence_transformers.models.Transformer(contriever_model_name)
+    # pooling_model = sentence_transformers.models.Pooling(
+    #     word_embedding_model.get_word_embedding_dimension(),
+    #     pooling_mode_mean_tokens=True,
+    #     pooling_mode_cls_token=False,
+    #     pooling_mode_max_tokens=False
+    # )
+    # model_name = sentence_transformers.SentenceTransformer(modules=[word_embedding_model, pooling_model])
+    model_name = "all-mpnet-base-v2" # './models/contr-bdi-sim-model' #  
+    ndcg, _map, recall, precision = evaluate_retrieval(model_name, corpus, queries, qrels)
+    # row = ["cont-bdi-sim", args.symptom, _map["MAP@10"], _map["MAP@100"], _map["MAP@1000"], precision["P@10"], precision["P@100"], precision["P@1000"], recall["Recall@10"],\
+    #      recall["Recall@100"], recall["Recall@1000"], ndcg["NDCG@10"], ndcg["NDCG@100"], ndcg["NDCG@1000"]]
 
-    print(row)
-    with open("../custom_sols/output_2024.csv",'a+') as f:
-        writer_object = writer(f)
-        writer_object.writerow(row)
-        f.close()
+    # print(row)
+    # with open("../custom_sols/output.csv",'a+') as f:
+    #     writer_object = writer(f)
+    #     writer_object.writerow(row)
+    #     f.close()
