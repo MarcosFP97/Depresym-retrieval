@@ -1,4 +1,5 @@
 models
 DeepCT
 beir-ColBERT
-embeddings
+embeddings/qrels
+embeddings/*
