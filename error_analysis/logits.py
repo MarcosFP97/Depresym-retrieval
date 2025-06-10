@@ -61,7 +61,7 @@ def disorbert_person_score(sentence, model, tokenizer):
         return sum(real_tokens_preds) / len(real_tokens_preds) 
 
 # Ejemplo de oraciones
-sentence1 = "I feel super guilty."  
+sentence1 = "I think I am depressed."  
 sentence2 = "Do you feel guilty?" #"You feel guilty, too."  
 
 score1 = disorbert_person_score(sentence1, model, tokenizer)

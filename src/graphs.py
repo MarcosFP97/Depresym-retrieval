@@ -10,14 +10,15 @@ all_embeddings = []
 all_labels = []
 all_sentences = []
 
-for file in os.listdir('./embeddings/'):
+for file in os.listdir('./embeddings/qrels/sub2'):
     if file.endswith(".pkl") and "post" in file:
         class_label = file.split('_')[0]  # nombre del archivo sin extensión
-        with open(os.path.join('./embeddings/', file), "rb") as f:
-            sentences, embeddings = pickle.load(f)
+        with open(os.path.join('./embeddings/qrels/sub2', file), "rb") as f:
+            sentences, embeddings, labels = pickle.load(f)
             all_embeddings.append(embeddings)
-            all_labels.extend([class_label] * len(embeddings))
+            all_labels.extend(labels)
             all_sentences.extend(sentences)
+
 
 # Unir todo
 all_embeddings = np.vstack(all_embeddings)
@@ -41,7 +42,7 @@ for label in unique_labels:
     ax.scatter(coords[:, 0], coords[:, 1], coords[:, 2],
                label=label, color=label_color_map[label], alpha=0.7)
 
-ax.set_title("bdi-mpnet-base")
+ax.set_title("all-mpnet-base")
 # ax.set_xlabel("UMAP-1")
 # ax.set_ylabel("UMAP-2")
 # ax.set_zlabel("UMAP-3")

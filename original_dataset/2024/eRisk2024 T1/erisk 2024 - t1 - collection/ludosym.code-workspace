@@ -1,0 +1,32 @@
+{
+	"folders": [
+		{
+			"path": "../../../../../ludosym"
+		},
+		{
+			"path": "../../../../../sim-sigir"
+		},
+		{
+			"path": "../../../../../meds-eval"
+		},
+		{
+			"path": "../../../../../information-seeking-health"
+		},
+		{
+			"path": "../../../../../search-verify-simulation"
+		},
+		{
+			"path": "../../../../../textscope"
+		},
+		{
+			"path": "../../../../../Docencia/Curso 24_25/CompDist"
+		},
+		{
+			"path": "../../../../../hyde"
+		},
+		{
+			"path": "../../../.."
+		}
+	],
+	"settings": {}
+}
