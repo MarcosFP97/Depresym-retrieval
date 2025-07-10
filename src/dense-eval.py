@@ -1,5 +1,6 @@
 import argparse
 import json
+import spacy
 
 from beir.datasets.data_loader import GenericDataLoader
 from csv import writer
@@ -32,6 +33,18 @@ def evaluate_dpr(
     ndcg, _map, recall, precision = retriever.evaluate(qrels, results, retriever.k_values)
     return ndcg, _map, recall, precision
 
+
+pronouns_first_person = {"i", "me", "my", "mine", "we", "us", "our", "ours"}
+nlp = spacy.load("en_core_web_sm")
+def pos(
+    sentence:str
+):
+    doc = nlp(sentence.lower())
+    for token in doc:
+        if token.text in pronouns_first_person and token.dep_ in {"nsubj", "nsubjpass"}:
+            return 1000  # Sujeto en primera persona encontrado 
+    return 0
+
 #### Here include more methods for ANCE, etc.
 
 def evaluate_ance(
@@ -42,6 +55,13 @@ def evaluate_ance(
     model = DRES(models.SentenceBERT("msmarco-roberta-base-ance-firstp"))
     retriever = EvaluateRetrieval(model, score_function="dot")
     results = retriever.retrieve(corpus, queries)
+
+    ### POS
+    for q in results.keys():
+        for sid, val in results[q].items():
+            sent = corpus[sid]['text']
+            pos_score = pos(sent)
+            results[q][sid] = val + pos_score
     ndcg, _map, recall, precision = retriever.evaluate(qrels, results, retriever.k_values)
     return ndcg, _map, recall, precision
 
@@ -63,31 +83,31 @@ if __name__=="__main__":
     corpus,queries,qrels = load_custom_data("../dataset_format_beir/sentences.jsonl", "../dataset_format_beir/options/queries/queries_"+str(args.symptom)+".jsonl", "../dataset_format_beir/options/qrels/qrels_"+str(args.symptom)+".tsv")
     
     #### DPR eval
-    ndcg, _map, recall, precision = evaluate_dpr(corpus, queries, qrels)
-    row = ["dpr", args.symptom, _map["MAP@10"], _map["MAP@100"], _map["MAP@1000"], precision["P@10"], precision["P@100"], precision["P@1000"], recall["Recall@10"],\
-         recall["Recall@100"], recall["Recall@1000"], ndcg["NDCG@10"], ndcg["NDCG@100"], ndcg["NDCG@1000"]]
+    #ndcg, _map, recall, precision = evaluate_dpr(corpus, queries, qrels)
+    #row = ["dpr", args.symptom, _map["MAP@10"], _map["MAP@100"], _map["MAP@1000"], precision["P@10"], precision["P@100"], precision["P@1000"], recall["Recall@10"],\
+    #     recall["Recall@100"], recall["Recall@1000"], ndcg["NDCG@10"], ndcg["NDCG@100"], ndcg["NDCG@1000"]]
 
-    with open("../baselines/options/output.csv",'a+') as f:
-        writer_object = writer(f)
-        writer_object.writerow(row)
-        f.close()
+    #with open("../baselines/options/output.csv",'a+') as f:
+    #    writer_object = writer(f)
+    #    writer_object.writerow(row)
+    #    f.close()
     
     #### ANCE eval
     ndcg, _map, recall, precision = evaluate_ance(corpus, queries, qrels)
     row = ["ance", args.symptom, _map["MAP@10"], _map["MAP@100"], _map["MAP@1000"], precision["P@10"], precision["P@100"], precision["P@1000"], recall["Recall@10"],\
          recall["Recall@100"], recall["Recall@1000"], ndcg["NDCG@10"], ndcg["NDCG@100"], ndcg["NDCG@1000"]]
 
-    with open("../baselines/options/output.csv",'a+') as f:
+    with open("../custom_sols/baselines_pos.csv",'a+') as f:
         writer_object = writer(f)
         writer_object.writerow(row)
         f.close()
 
     #### TASB eval
-    ndcg, _map, recall, precision = evaluate_tasb(corpus, queries, qrels)
-    row = ["tasb", args.symptom, _map["MAP@10"], _map["MAP@100"], _map["MAP@1000"], precision["P@10"], precision["P@100"], precision["P@1000"], recall["Recall@10"],\
-         recall["Recall@100"], recall["Recall@1000"], ndcg["NDCG@10"], ndcg["NDCG@100"], ndcg["NDCG@1000"]]
+    #ndcg, _map, recall, precision = evaluate_tasb(corpus, queries, qrels)
+    #row = ["tasb", args.symptom, _map["MAP@10"], _map["MAP@100"], _map["MAP@1000"], precision["P@10"], precision["P@100"], precision["P@1000"], recall["Recall@10"],\
+    #     recall["Recall@100"], recall["Recall@1000"], ndcg["NDCG@10"], ndcg["NDCG@100"], ndcg["NDCG@1000"]]
 
-    with open("../baselines/options/output.csv",'a+') as f:
-        writer_object = writer(f)
-        writer_object.writerow(row)
-        f.close()
+    #with open("../baselines/options/output.csv",'a+') as f:
+    #    writer_object = writer(f)
+    #    writer_object.writerow(row)
+    #    f.close()

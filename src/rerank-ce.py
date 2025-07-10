@@ -2,6 +2,7 @@ import argparse
 import requests 
 import os
 import json
+import spacy
 from csv import writer
 from DeepCT.deepct import run_deepct 
 from beir.datasets.data_loader import GenericDataLoader
@@ -55,6 +56,13 @@ def search_bm25(
     query_texts = [queries[qid] for qid in qids]
     payload = {"queries": query_texts, "qids": qids, "k": max(retriever.k_values)}
     results = json.loads(requests.post(docker_beir_pyserini + "/lexical/batch_search/", json=payload).text)["results"]
+    
+    #### POS
+    for q in results.keys():
+        for sid, val in results[q].items():
+            sent = corpus[sid]['text']
+            pos_score = pos(sent)
+            results[q][sid] = val + pos_score
     return retriever, results
 
 def order_results(
@@ -93,6 +101,17 @@ def search_tasb(
     results = retriever.retrieve(corpus, queries)
     return retriever, results
 
+pronouns_first_person = {"i", "me", "my", "mine", "we", "us", "our", "ours"}
+nlp = spacy.load("en_core_web_sm")
+def pos(
+    sentence:str
+):
+    doc = nlp(sentence.lower())
+    for token in doc:
+        if token.text in pronouns_first_person and token.dep_ in {"nsubj", "nsubjpass"}:
+            return 1000  # Sujeto en primera persona encontrado 
+    return 0
+
 def rerank(
     model_name:str,
     retriever:object,
@@ -105,7 +124,7 @@ def rerank(
     rerank_results = reranker.rerank(corpus, queries, results, top_k=k)
     sorted_rerank_results = order_results(rerank_results)
     final_results = {}
-    for qid, res in sorted_rerank_results.items():
+    for qid, res in sorted_rerank_results.items(): #### añade los resultados de la cola del ranking
         full_rank = list(results[qid].items())[k:]
         ll = list(res.items()) + full_rank
         dd = dict(ll)
@@ -215,7 +234,7 @@ if __name__=="__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("symptom", nargs='?', default="agitation") ### With this param we select the kind of query: only the BDI item tite, the firs question, a symptom, etc.
     args = parser.parse_args()
-    corpus,queries,qrels = load_custom_data("../dataset_format_beir/sentences.jsonl", "../dataset_format_beir/options/queries/queries_"+str(args.symptom)+".jsonl", "../dataset_format_beir/options/qrels/qrels_"+str(args.symptom)+".tsv")
+    corpus,queries,qrels = load_custom_data("../dataset_format_beir/2024/sentences_only_text.jsonl", "../dataset_format_beir/options/queries/queries_"+str(args.symptom)+".jsonl", "../dataset_format_beir/2024/options/qrels/qrels_"+str(args.symptom)+".tsv")
     
     # TITLE 
     # corpus,queries,qrels = load_custom_data("../dataset_format_beir/sentences.jsonl", "../dataset_format_beir/queries.jsonl", "../dataset_format_beir/qrels.tsv")
@@ -234,10 +253,10 @@ if __name__=="__main__":
     
     custom_reranker = 'cross-encoder/ms-marco-MiniLM-L-6-v2' #'/home/marcos.fernandez.pichel/PhD/cross-domain-symptom-detection/src/training/SimCSE/result/disorbert-wiki1m'
     ndcg, _map, recall, precision = rerank(custom_reranker, retriever, sorted_results, qrels, 100)
-    row = ["bm25+cefull",100, args.symptom, _map["MAP@10"], _map["MAP@100"], _map["MAP@1000"], precision["P@5"], precision["P@10"], precision["P@100"], precision["P@1000"], recall["Recall@10"],\
+    row = ["bm25_ce_2024",100, args.symptom, _map["MAP@10"], _map["MAP@100"], _map["MAP@1000"], precision["P@5"], precision["P@10"], precision["P@100"], precision["P@1000"], recall["Recall@10"],\
          recall["Recall@100"], recall["Recall@1000"], ndcg["NDCG@10"], ndcg["NDCG@100"], ndcg["NDCG@1000"]]
 
-    with open("../baselines/options/output.csv",'a+') as f:
+    with open("../custom_sols/baselines_pos.csv",'a+') as f:
        writer_object = writer(f)
        writer_object.writerow(row)
        f.close()
