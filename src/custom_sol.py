@@ -6,9 +6,7 @@ import torch
 import pickle
 import math
 import torch.nn.functional as F
-
-from transformers import AutoTokenizer, AutoModelForMaskedLM, AutoModelForSequenceClassification
-from sentence_transformers import SentenceTransformer
+import sentence_transformers
 from beir.datasets.data_loader import GenericDataLoader
 from beir.retrieval import models
 from beir.retrieval.evaluation import EvaluateRetrieval
@@ -188,8 +186,8 @@ def evaluate_retrieval(
     qrels:object
 ):
     model = models.SentenceBERT(model_name)
-    # model.q_model = model_name  # Tu SentenceTransformer con pooling
-    # model.doc_model = model_name
+    model.q_model = model_name  # Tu SentenceTransformer con pooling
+    model.doc_model = model_name
     model = DRES(model)
     retriever = EvaluateRetrieval(model, score_function="dot")
     results = retriever.retrieve(corpus, queries)
@@ -200,47 +198,7 @@ def evaluate_retrieval(
             sent = corpus[sid]['text']
             pos_score = pos(sent)
             results[q][sid] = val + pos_score
-    
-    ordered_results = order_results(results)
-    sents = []
-    for docid in list(ordered_results['2'].keys())[:50]:
-        text = corpus[docid]['text']
-        sents.append(text)
-    sbert_model = SentenceTransformer(model_name)
-    embeddings = sbert_model.encode(sents, normalize_embeddings=True)
-    with open("punishment_pre_embeddings.pkl", "wb") as f:
-        pickle.dump((sents, embeddings), f)
-    # for docid in list(ordered_results['2'].keys())[:10]:
-    #     try:
-    #         print(f'Doc ID:{docid} - {corpus[docid]}- {qrels["2"][docid]}')
-    #     except:
-    #         print(f'Doc ID:{docid} - {corpus[docid]}- 0')
-    # found_irrels, missed_rels = missing_rels(ordered_results, symptom)
 
-    
-    # with open('../error_analysis/irrels_found_'+symptom+'_scores.txt', 'w+') as f:
-    #     for rel in found_irrels:
-    #         print(f"{rel} - {corpus[rel]['text']}")
-    #         f.write(corpus[rel]['text']+"-"+str(ordered_results['4'][rel])+'\n')
-        
-    # with open('../error_analysis/missed_rels_'+symptom+'_scores.txt', 'w+') as f:
-    #     for rel in missed_rels:
-    #         print(f"{rel} - {corpus[rel]['text']}")
-    #         f.write(corpus[rel]['text']+"-"+str(ordered_results['4'][rel])+'\n')
-
-    # for k,v in ordered_results.items():
-    #     top_k=0
-    #     for sid, score in v.items():
-    #         top_k+=1
-    #         sentence = corpus[sid]['text']
-    #         try:
-    #             rel = qrels[str(k)][sid]
-    #         except:
-    #             rel=0
-    #         error_analysis.loc[len(error_analysis)] = [k, sid, sentence, rel]
-    #         if top_k==10:
-    #             break
-    # error_analysis.to_csv(f'../error_analysis/pos/{symptom}_nli.csv', index=False)
     ndcg, _map, recall, precision = retriever.evaluate(qrels, results, retriever.k_values)
     return ndcg, _map, recall, precision
     
@@ -253,21 +211,21 @@ if __name__=="__main__":
     print(len(corpus))
     
     # contriever_model_name = "facebook/contriever" #### contriever
-    # word_embedding_model = sentence_transformers.models.Transformer(contriever_model_name)
-    # pooling_model = sentence_transformers.models.Pooling(
-    #     word_embedding_model.get_word_embedding_dimension(),
-    #     pooling_mode_mean_tokens=True,
-    #     pooling_mode_cls_token=False,
-    #     pooling_mode_max_tokens=False
-    # )
-    # model_name = sentence_transformers.SentenceTransformer(modules=[word_embedding_model, pooling_model])
-    model_name = "all-mpnet-base-v2" # './models/contr-bdi-sim-model' #  
+    word_embedding_model = sentence_transformers.models.Transformer('./models/bdi-mpnet-base-hard')
+    pooling_model = sentence_transformers.models.Pooling(
+         word_embedding_model.get_word_embedding_dimension(),
+         pooling_mode_mean_tokens=True,
+         pooling_mode_cls_token=False,
+         pooling_mode_max_tokens=False
+    )
+    model_name = sentence_transformers.SentenceTransformer(modules=[word_embedding_model, pooling_model])
+    # model_name = './models/bdi-mpnet-base-hard-sb' #  "all-mpnet-base-v2" # 
     ndcg, _map, recall, precision = evaluate_retrieval(model_name, corpus, queries, qrels)
-    # row = ["cont-bdi-sim", args.symptom, _map["MAP@10"], _map["MAP@100"], _map["MAP@1000"], precision["P@10"], precision["P@100"], precision["P@1000"], recall["Recall@10"],\
-    #      recall["Recall@100"], recall["Recall@1000"], ndcg["NDCG@10"], ndcg["NDCG@100"], ndcg["NDCG@1000"]]
+    row = ["bdi-mpnet-hybrid", args.symptom, _map["MAP@10"], _map["MAP@100"], _map["MAP@1000"], precision["P@10"], precision["P@100"], precision["P@1000"], recall["Recall@10"],\
+          recall["Recall@100"], recall["Recall@1000"], ndcg["NDCG@10"], ndcg["NDCG@100"], ndcg["NDCG@1000"]]
 
-    # print(row)
-    # with open("../custom_sols/output.csv",'a+') as f:
+    print(row)
+    # with open("../custom_sols/loss.csv",'a+') as f:
     #     writer_object = writer(f)
     #     writer_object.writerow(row)
     #     f.close()
